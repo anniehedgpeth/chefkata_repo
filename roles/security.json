@@ -1,0 +1,23 @@
+{
+    "name": "security",
+    "description": "This is an example role called SECURITY defined as JSON",
+    "chef_type": "role",
+    "json_class": "Chef::Role",
+    "default_attributes": {
+      "os-hardening" : {
+        "security" : {
+          "kernel" : {
+            "enable_module_loading" : true
+          }
+        }
+      }
+    },
+    "override_attributes": {
+      "chefkata": {
+          "builder": "Security"
+      }
+    },
+    "run_list": [
+        "recipe[chef-os-hardening]"
+    ]
+}
