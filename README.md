@@ -1,24 +1,94 @@
-# Overview
+# Create a new repo for today's kata
+ - from code/chef/work create a new repo `chef generate repo chefkata4`
+ - create /code/chef/work/chefkata4/.chef and copy the user pem inside the .chef directory
+ - generate knife.rb "generate knife config" for that org to put in .chef folder, too
 
-Every Chef installation needs a Chef Repository. This is the place where cookbooks, roles, config files and other artifacts for managing systems with Chef will live. We strongly recommend storing this repository in a version control system such as Git and treat it like source code.
+# Create a new cookbook branch
+ - from code/chef/work/chefkata4/cookbooks `git clone https://github.com/anniehedgpeth/chefkata.git`
+ - from code/chef/work/chefkata4/cookbooks/chefkata create a branch, name it, and switch to it  `git checkout -b <branch-name>`
+ 
+# Add the second cookbook for the runlist
+ - add the ubuntu cookbook to that cookbooks directory and make sure it converges `git clone https://github.com/anniehedgpeth/ubuntu-14-hardening.git`
+`berks install`
+`berks upload`
 
-While we prefer Git, and make this repository available via GitHub, you are welcome to download a tar or zip archive and use your favorite version control system to manage the code.
 
-# Repository Directories
+Any time I change the cookbook, from that cookbook’s directory, I need to:
+ - bump the version in `metadata.rb` or it won't upload the new one
+ - (you would normally automate that in Jenkins)
+`berks install`
+`berks upload`
 
-This repository contains several directories, and each directory contains a README file that describes what it is for in greater detail, and how to use it for managing your systems with Chef.
+# To bootstrap a new machine:
 
-- `cookbooks/` - Cookbooks you download or create.
-- `data_bags/` - Store data bags and items in .json in the repository.
-- `roles/` - Store roles in .rb or .json in the repository.
-- `environments/` - Store environments in .rb or .json in the repository.
+`knife bootstrap chefkata6.southcentralus.cloudapp.azure.com -N chefkata6 -r 'recipe[chefkata::default], recipe[ubuntu-14-hardening::default]' --ssh-user annie --sudo`
 
-# Configuration
+# To converge on that node from here on out:
 
-The config file, `.chef/knife.rb` is a repository specific configuration file for knife. If you're using the Chef Platform, you can download one for your organization from the management console. If you're using the Open Source Chef Server, you can generate a new one with `knife configure`. For more information about configuring Knife, see the Knife documentation.
+run `sudo chef-client` in an ssh session
 
-<https://docs.chef.io/knife.html>
+# To validate with InSpec Profile
+First you have to add your private key to the local ssh (I don't know if it matters which directory you're in.)
+`ssh-add`
+`ssh annie@chefkata6.southcentralus.cloudapp.azure.com`
+`inspec exec https://github.com/anniehedgpeth/chefkata_inspec -t ssh://annie@chefkata6.southcentralus.cloudapp.azure.com`
 
-# Next Steps
+# To add run-list:
 
-Read the README file in each of the subdirectories for more information about what goes in those directories.
+`knife node run_list set chefkata2 'recipe[chefkata::default]'`
+
+# To edit the run-list:
+ - `knife node show chefkata6`
+ - make sure the cookbook is uploaded
+ - make sure it has a `Berksfile`
+ - `berks install`
+ - `berks upload`
+ - `knife node run_list add chefkata2 'ubuntu-14-hardening'`
+
+# When adding an organization to manage.chef.io
+ - add the org
+ - reset user key
+generate knife config from UI
+copy the user key into .chef folder
+create a new org key and download knife.rb
+see if your user needs a new key
+`knife node list`
+
+# Search
+knife search node "platform:ubuntu"
+knife search node "builder:Annie"
+
+# Data bags
+ - shared data that your cookbooks can use
+ - data_bags directory is in the chef_repo sibling to cookbooks directory
+ - each data bag is a folder and each data_bag item is a .json file within that folder
+ - the data_bag item is just a .json file of all of settings for that data_bag item
+   - must include `{ "id":"<data_bag_item_name>" }`
+ - upload data_bag item to chef server so that you can use it in your cookbook
+   - first create the bag on the server
+    - `knife data bag create website message.json`
+   - run this from the top of the chef repo directory `knife data bag from file BAG_NAME ITEM_NAME.json`
+   - `knife data bag from file website messages.json`
+   - It's the same command to update the data bag if you edit it
+ - Verify that it's there in UI 
+   - Policy > Data Bags > name
+ - Verify that it's there from command line 
+  - `knife data bag list`
+
+## Using data bags in the recipe
+ - First we access the data from that item
+ `messages = data_bag_item('website', 'messages')`
+ - Then we're calling the specific data element from that item 
+ `message = messages['welcomeMessage']`
+ - Then call it in the recipe like `content message`
+
+## Using data bags in test kitchen
+So kitchen can't look inside the "real" data bags directory, so you have to set up a dummy data bags directory just for test kitchen.
+ - Create cookbooks/thiscookbook/test/integration/data_bags and copy your real data bag directory into that
+ - Then edit the .kitchen.yml
+
+```yaml
+suites:
+ - name: default
+   data_bags_path: "test/integration/data_bags"
+```
