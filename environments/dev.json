@@ -1,0 +1,17 @@
+{
+    "name": "dev",
+    "description": "This is an example environment called DEV defined as JSON",
+    "chef_type": "environment",
+    "json_class": "Chef::Environment",
+    "default_attributes": {
+    },
+    "override_attributes": {
+        "chefkata": {
+          "builder": "Development"
+        }
+    },
+    "cookbook_versions": {
+        "os-hardening": "= 2.0.0",
+        "chefkata": ">= 1.0.0"
+    }
+}

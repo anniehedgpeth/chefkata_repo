@@ -1,0 +1,17 @@
+{
+    "name": "prod",
+    "description": "This is an example environment called PROD defined as JSON",
+    "chef_type": "environment",
+    "json_class": "Chef::Environment",
+    "default_attributes": {
+    },
+    "override_attributes": {
+        "chefkata": {
+          "builder": "Production"
+        }
+    },
+    "cookbook_versions": {
+        "os-hardening": "= 2.0.0",
+        "chefkata": ">= 0.1.1"
+    }
+}
